@@ -16,11 +16,16 @@ RUN pip install Red-DiscordBot
 # Set up basic config directory
 RUN mkdir -p /app/data
 
-# Create a setup script
+# Run setup during build
+RUN redbot-setup --no-prompt --instance-name docker --data-path /app/data
+
+# Create a more robust start script
 RUN echo '#!/bin/bash\n\
-echo "yes" | redbot-setup --no-prompt --instance-name docker --data-path /app/data \n\
-redbot docker --token $TOKEN --prefix $PREFIX' > /app/start.sh && \
+if [ ! -d "/app/data/docker" ]; then\n\
+    redbot-setup --no-prompt --instance-name docker --data-path /app/data\n\
+fi\n\
+exec redbot docker --token $TOKEN --prefix $PREFIX' > /app/start.sh && \
     chmod +x /app/start.sh
 
-# Command to run the start script
-CMD ["/app/start.sh"]
+# Set the entrypoint
+ENTRYPOINT ["/bin/bash", "/app/start.sh"]
